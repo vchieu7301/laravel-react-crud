@@ -2,12 +2,55 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+
+    public function register(Request $request)
+    {
+        $params = $request->input();
+        $validator = Validator::make($request->input(), [
+        'name' => 'required',
+        'password' => 'required',
+        'email' => 'required'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => true,
+                'code'=> Response::HTTP_BAD_REQUEST,
+                'mesage' => $validator->errors()
+            ]);
+        }
+        try{
+            $user = new User();
+            $user->name = $params['name'];
+            $user->password = bcrypt($params['password']);
+            $user->email = $params['email'];
+            $user->save();
+            return response()->json([
+                'error' => false,
+                'message' => 'Successfull',
+            ]);
+        }catch(Exception $e){
+            Log::info($e);
+            return response()->json([
+                'error' => true,
+                'code'=> Response::HTTP_BAD_REQUEST,
+                'message' => 'Add user fail',
+            ]);
+        }
+    }
+    
 
     public function login(Request $request)
     {
@@ -19,10 +62,29 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $tokenName = 'Personal Access Token';
             $token = $request->user()->createToken($tokenName);
-            return ['token' => $token->plainTextToken];
+            return response()->json([
+                'token' => $token->plainTextToken
+            ]);
         }
+        return response()->json([
+            'error' => true,
+            'code' => Response::HTTP_UNAUTHORIZED,
+            'mesage' => 'Invalid client'
+        ]);
+    }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+    public function logout(Request $request)
+    {
+        $request->user()->tokens()->delete();
+        
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
+    }
+
+    public function unauthenticated ()
+    {
+        return response()->json(['error' => true,'code' => Response::HTTP_UNAUTHORIZED, 'message' => 'Unauthenticated']);
     }
     
     /**

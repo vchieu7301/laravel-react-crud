@@ -96,19 +96,6 @@ class RecordController extends Controller
     public function update(Request $request, string $id)
     {
         $params = $request->input();
-        $id = $params['id'];
-        $validator = Validator::make($request->input(), [
-         'title' => 'required',
-         'description' => 'required'
-         ]);
-         if ($validator->fails()) {
-             return response()->json([
-                 'error' => true,
-                 'code'=> Response::HTTP_BAD_REQUEST,
-                 'mesage' => $validator->errors()
-             ]);
-         }
-         
          try{
              $record = Record::where('id', $id)->whereNull('deleted_at')->first();
              $record->title = $params['title'];
@@ -133,17 +120,6 @@ class RecordController extends Controller
      */
     public function destroy(string $id, Request $request)
     {
-        $id = $request->input('id');
-        $validator = Validator::make($request->input(), [
-         'id' => 'required',
-         ]);
-         if ($validator->fails()) {
-             return response()->json([
-                 'error' => true,
-                 'code'=> Response::HTTP_BAD_REQUEST,
-                 'mesage' => $validator->errors()
-             ]);
-         }
          try{
              $record = Record::where('id', $id)->whereNull('deleted_at')->first();
              $record->deleted_at = Carbon::now();
